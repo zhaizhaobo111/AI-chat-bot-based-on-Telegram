@@ -115,16 +115,16 @@ EMOJI_MAP = {
     ],
 }
 
-# 触发词到情绪的映射
+# 触发词到情绪的映射（长词优先，避免短词误匹配）
 TRIGGER_MAP = {
     "开心": "happy", "高兴": "happy", "哈哈": "happy", "太好了": "happy",
     "恭喜": "happy", "厉害": "happy", "加油": "happy", "好耶": "happy",
-    "生气": "angry", "哼": "angry", "讨厌": "angry", "烦": "angry",
+    "生气": "angry", "讨厌": "angry", "烦": "angry",
     "笨蛋": "angry", "打你": "angry",
     "难过": "sad", "伤心": "sad", "哭": "sad", "累": "sad",
     "抱歉": "sad", "辛苦": "sad", "委屈": "sad",
     "害羞": "shy", "脸红": "shy", "不好意思": "shy",
-    "切": "smug", "才不是": "smug", "嘚瑟": "smug",
+    "切": "smug", "才不是": "smug", "嘚瑟": "smug", "哼": "smug",
     "喜欢": "love", "爱": "love", "想你": "love", "亲": "love",
     "惊": "surprised", "不会吧": "surprised", "真的吗": "surprised",
     "吃": "eating", "饿": "eating", "奶茶": "eating", "火锅": "eating",
@@ -133,7 +133,9 @@ TRIGGER_MAP = {
 
 
 def detect_mood(text: str) -> str:
-    for trigger, mood in TRIGGER_MAP.items():
+    # 按触发词长度降序，长词优先匹配
+    sorted_triggers = sorted(TRIGGER_MAP.items(), key=lambda x: len(x[0]), reverse=True)
+    for trigger, mood in sorted_triggers:
         if trigger in text:
             return mood
     return "default"
