@@ -1,9 +1,11 @@
+import json
+import os
 import random
 
 CDN = "https://fastly.jsdelivr.net/gh/willow-god/owo"
 
-# 情绪到表情包的映射（每个情绪对应多张图，随机选）
-EMOJI_MAP = {
+# owo 表情包（原有）
+OWO_EMOJI = {
     "happy": [
         f"{CDN}/liushen/liushen-happy.png",
         f"{CDN}/liushen/liushen-congratulation.png",
@@ -115,6 +117,32 @@ EMOJI_MAP = {
     ],
 }
 
+# BiliEmoji 表情包（从 JSON 加载）
+BILI_EMOJI_FILE = "bili_emojis_classified.json"
+
+
+def load_bili_emoji() -> dict:
+    if os.path.exists(BILI_EMOJI_FILE):
+        with open(BILI_EMOJI_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+# 合并两个表情包库
+def build_emoji_map() -> dict:
+    bili = load_bili_emoji()
+    merged = {}
+    for mood in OWO_EMOJI:
+        merged[mood] = OWO_EMOJI[mood] + bili.get(mood, [])
+    # 把 bili 中有但 OWO 没有的情绪也加进来
+    for mood in bili:
+        if mood not in merged:
+            merged[mood] = bili[mood]
+    return merged
+
+
+EMOJI_MAP = build_emoji_map()
+
 # 触发词到情绪的映射（长词优先，避免短词误匹配）
 TRIGGER_MAP = {
     "开心": "happy", "高兴": "happy", "哈哈": "happy", "太好了": "happy",
@@ -142,5 +170,11 @@ def detect_mood(text: str) -> str:
 
 
 def get_meme_url(mood: str) -> str | None:
-    candidates = EMOJI_MAP.get(mood, EMOJI_MAP["default"])
+    candidates = EMOJI_MAP.get(mood, EMOJI_MAP.get("default", []))
+    if not candidates:
+        # 所有表情包里随机选一个
+        all_emojis = [url for urls in EMOJI_MAP.values() for url in urls]
+        if all_emojis:
+            return random.choice(all_emojis)
+        return None
     return random.choice(candidates)
